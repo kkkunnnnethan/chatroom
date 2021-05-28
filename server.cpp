@@ -1,113 +1,112 @@
 #include <iostream>
 #include <string>
-#include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <netdb.h>
 #include <sys/uio.h>
-#include <sys/time.h>
 #include <sys/wait.h>
-#include <fcntl.h>
-#include <fstream>
-using namespace std;
-//Server side
+
+void error(const std::string& msg) {
+    std::cerr << msg << std::endl;
+    exit(1);
+}
+
 int main(int argc, char *argv[])
 {
     //for the server, we only need to specify a port number
-    if(argc != 2)
-    {
-        cerr << "Usage: port" << endl;
-        exit(0);
-    }
-    //grab the port number
-    int port = atoi(argv[1]);
+    if(argc != 2) error("Usage: port");
+
+    //sockfd and newsockfd are file descriptors
+    //portno stores the port number on which the server accepts connections
+    int sockfd, newsockfd, portno, n;
+
+    //clilen stores the size of the address of the client. This is needed for the accept system call
+    socklen_t clilen;
+
     //buffer to send and receive messages with
-    char msg[1500];
+    char msg[256];
      
     //setup a socket and connection tools
     sockaddr_in servAddr;
+    sockaddr_in cliAddr;
+
+    //open stream oriented socket with internet address also keep track of the socket descriptor
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sockfd < 0) error("Error establishing the server socket");
+
+    //The function bzero() sets all values in a buffer to zero.
+    //It takes two arguments, the first is a pointer to the buffer and the second is the size of the buffer.
+    //Thus, this line initializes serv_addr to zeros.
     bzero((char*)&servAddr, sizeof(servAddr));
+
+    //grab the port number
+    portno = atoi(argv[1]);
+
     servAddr.sin_family = AF_INET;
-    servAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servAddr.sin_port = htons(port);
- 
-    //open stream oriented socket with internet address
-    //also keep track of the socket descriptor
-    int serverSd = socket(AF_INET, SOCK_STREAM, 0);
-    if(serverSd < 0)
-    {
-        cerr << "Error establishing the server socket" << endl;
-        exit(0);
-    }
+    //htonl-> converts a port number in host byte order to a port number in network byte order.
+    servAddr.sin_port = htons(portno);
+    servAddr.sin_addr.s_addr = INADDR_ANY;
+
     //bind the socket to its local address
-    int bindStatus = bind(serverSd, (struct sockaddr*) &servAddr, 
-        sizeof(servAddr));
-    if(bindStatus < 0)
-    {
-        cerr << "Error binding socket to local address" << endl;
-        exit(0);
-    }
-    cout << "Waiting for a client to connect..." << endl;
+    if (bind(sockfd, (struct sockaddr*) &servAddr, sizeof(servAddr)) < 0)
+        error("Error binding socket to local address");
+
+    std::cout << "Waiting for a client to connect..." << std::endl;
+
     //listen for up to 5 requests at a time
-    listen(serverSd, 5);
+    listen(sockfd, 5);
+
     //receive a request from client using accept
     //we need a new address to connect with the client
-    sockaddr_in newSockAddr;
-    socklen_t newSockAddrSize = sizeof(newSockAddr);
+    clilen = sizeof(cliAddr);
     //accept, create a new socket descriptor to 
     //handle the new connection with client
-    int newSd = accept(serverSd, (sockaddr *)&newSockAddr, &newSockAddrSize);
-    if(newSd < 0)
-    {
-        cerr << "Error accepting request from client!" << endl;
-        exit(1);
-    }
-    cout << "Connected with client!" << endl;
-    //lets keep track of the session time
-    struct timeval start1, end1;
-    gettimeofday(&start1, NULL);
-    //also keep track of the amount of data sent as well
-    int bytesRead, bytesWritten = 0;
-    while(1)
+    newsockfd = accept(sockfd, (sockaddr *)&cliAddr, &clilen);
+    if (newsockfd < 0) error("Error accepting request from client!");
+
+    std::cout << "Connected with client!" << std::endl;
+
+    while(true)
     {
         //receive a message from the client (listen)
-        cout << "Awaiting client response..." << endl;
+        std::cout << "Awaiting client response..." << std::endl;
         memset(&msg, 0, sizeof(msg));//clear the buffer
-        bytesRead += recv(newSd, (char*)&msg, sizeof(msg), 0);
+
+        //the read() will block until there is something for it to read in the socket,
+        // i.e. after the client has executed a write()
+        n = recv(newsockfd, (char*)&msg, sizeof(msg), 0);
+        if (n < 0) error("Error reading from socket");
+
         if(!strcmp(msg, "exit"))
         {
-            cout << "Client has quit the session" << endl;
+            std::cout << "Client has quit the session" << std::endl;
             break;
         }
-        cout << "Client: " << msg << endl;
-        cout << ">";
-        string data;
-        getline(cin, data);
+
+        std::cout << "Client: " << msg << std::endl;
+        std::cout << ">";
+        std::string data;
+        getline(std::cin, data);
         memset(&msg, 0, sizeof(msg)); //clear the buffer
         strcpy(msg, data.c_str());
         if(data == "exit")
         {
             //send to the client that server has closed the connection
-            send(newSd, (char*)&msg, strlen(msg), 0);
+            send(newsockfd, (char*)&msg, sizeof(msg), 0);
             break;
         }
+
         //send the message to client
-        bytesWritten += send(newSd, (char*)&msg, strlen(msg), 0);
+        n = send(newsockfd, (char*)&msg, sizeof(msg), 0);
+        if (n < 0) error("Error writing to socket");
     }
+
     //we need to close the socket descriptors after we're all done
-    gettimeofday(&end1, NULL);
-    close(newSd);
-    close(serverSd);
-    cout << "********Session********" << endl;
-    cout << "Bytes written: " << bytesWritten << " Bytes read: " << bytesRead << endl;
-    cout << "Elapsed time: " << (end1.tv_sec - start1.tv_sec) 
-        << " secs" << endl;
-    cout << "Connection closed..." << endl;
+    close(newsockfd);
+    close(sockfd);
+    std::cout << "Connection closed..." << std::endl;
     return 0;   
 }
 

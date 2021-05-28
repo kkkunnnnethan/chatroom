@@ -8,6 +8,7 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 
+void communicate(int);
 void error(const std::string& msg) {
     std::cerr << msg << std::endl;
     exit(1);
@@ -20,13 +21,10 @@ int main(int argc, char *argv[])
 
     //sockfd and newsockfd are file descriptors
     //portno stores the port number on which the server accepts connections
-    int sockfd, newsockfd, portno, n;
+    int sockfd, newsockfd, portno, pid;
 
     //clilen stores the size of the address of the client. This is needed for the accept system call
     socklen_t clilen;
-
-    //buffer to send and receive messages with
-    char msg[256];
      
     //setup a socket and connection tools
     sockaddr_in servAddr;
@@ -61,12 +59,38 @@ int main(int argc, char *argv[])
     //receive a request from client using accept
     //we need a new address to connect with the client
     clilen = sizeof(cliAddr);
-    //accept, create a new socket descriptor to 
-    //handle the new connection with client
-    newsockfd = accept(sockfd, (sockaddr *)&cliAddr, &clilen);
-    if (newsockfd < 0) error("Error accepting request from client!");
 
-    std::cout << "Connected with client!" << std::endl;
+    while(true)
+    {
+        //accept, create a new socket descriptor to handle the new connection with client
+        newsockfd = accept(sockfd, (sockaddr *)&cliAddr, &clilen);
+        if (newsockfd < 0) error("Error accepting request from client!");
+        std::cout << "Connected with client!" << std::endl;
+
+        pid = fork();
+        if (pid < 0) error("Error on fork");
+        if (pid == 0) // in the child process
+        {
+            close(sockfd); // close parent socket
+            communicate(newsockfd);
+
+            //we need to close the socket descriptors after we're all done
+            close(sockfd);
+            std::cout << "Connection closed..." << std::endl;
+            return 0;
+        }
+        else
+        {
+            // in the parent process waiting for next accept
+            close(newsockfd);
+        }
+    }
+}
+
+void communicate(int sockfd) {
+    int n;
+    //buffer to send and receive messages with
+    char msg[256];
 
     while(true)
     {
@@ -76,7 +100,7 @@ int main(int argc, char *argv[])
 
         //the read() will block until there is something for it to read in the socket,
         // i.e. after the client has executed a write()
-        n = recv(newsockfd, (char*)&msg, sizeof(msg), 0);
+        n = recv(sockfd, (char*)&msg, sizeof(msg), 0);
         if (n < 0) error("Error reading from socket");
 
         if(!strcmp(msg, "exit"))
@@ -94,19 +118,13 @@ int main(int argc, char *argv[])
         if(data == "exit")
         {
             //send to the client that server has closed the connection
-            send(newsockfd, (char*)&msg, sizeof(msg), 0);
+            send(sockfd, (char*)&msg, sizeof(msg), 0);
             break;
         }
 
         //send the message to client
-        n = send(newsockfd, (char*)&msg, sizeof(msg), 0);
+        n = send(sockfd, (char*)&msg, sizeof(msg), 0);
         if (n < 0) error("Error writing to socket");
     }
-
-    //we need to close the socket descriptors after we're all done
-    close(newsockfd);
-    close(sockfd);
-    std::cout << "Connection closed..." << std::endl;
-    return 0;   
 }
 

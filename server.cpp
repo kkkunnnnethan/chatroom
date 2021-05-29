@@ -7,11 +7,78 @@
 #include <string.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+#include <pthread.h>
+#include <vector>
 
-void communicate(int);
+#include "Semaphore.h"
+
+#define numberOfClient 1
+int num;
+std::vector<int> sockfdArray{};
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 void error(const std::string& msg) {
     std::cerr << msg << std::endl;
     exit(1);
+}
+
+void broadcastMessage(char* msg) {
+    int temp;
+    //send the message to client
+    pthread_mutex_lock(&lock);
+    for (auto socks : sockfdArray) {
+        temp = send(socks, msg, sizeof(msg), 0);
+        if (temp < 0) error("Error writing to socket");
+    }
+    pthread_mutex_unlock(&lock);
+}
+
+void* socketThread(void *arg) {
+    int sockfd = *((int *)arg);
+    char msg[256]; int temp;
+
+    while(true)
+    {
+        //receive a message from the client (listen)
+        std::cout << "Awaiting client response..." << std::endl;
+        memset(&msg, 0, sizeof(msg));//clear the buffer
+
+        //the read() will block until there is something for it to read in the socket,
+        // i.e. after the client has executed a write()
+        temp = recv(sockfd, (char*)&msg, sizeof(msg), 0);
+        if (temp < 0) error("Error reading from socket");
+
+        if(!strcmp(msg, "exit"))
+        {
+            std::cout << "Client has quit the session" << std::endl;
+            num--;
+            close(sockfd);
+            pthread_exit(nullptr);
+        }
+
+        broadcastMessage(msg);
+
+        // lock
+        //pthread_mutex_lock(&lock);
+        //std::cout << "Client: " << msg << std::endl;
+        //std::cout << ">";
+        //std::string data;
+        //getline(std::cin, data);
+        //memset(&msg, 0, sizeof(msg)); //clear the buffer
+        //strcpy(msg, data.c_str());
+        //pthread_mutex_unlock(&lock);
+        //sleep(1);
+
+        /*if(data == "exit")
+        {
+            //send to the client that server has closed the connection
+            send(sockfd, (char*)&msg, sizeof(msg), 0);
+            semaphore.Signal();
+            num--;
+            close(sockfd);
+            pthread_exit(nullptr);
+        }*/
+    }
 }
 
 int main(int argc, char *argv[])
@@ -21,7 +88,7 @@ int main(int argc, char *argv[])
 
     //sockfd and newsockfd are file descriptors
     //portno stores the port number on which the server accepts connections
-    int sockfd, newsockfd, portno, pid;
+    int sockfd, newsockfd, portno;
 
     //clilen stores the size of the address of the client. This is needed for the accept system call
     socklen_t clilen;
@@ -55,6 +122,7 @@ int main(int argc, char *argv[])
 
     //listen for up to 5 requests at a time
     listen(sockfd, 5);
+    pthread_t tid[5];
 
     //receive a request from client using accept
     //we need a new address to connect with the client
@@ -64,67 +132,15 @@ int main(int argc, char *argv[])
     {
         //accept, create a new socket descriptor to handle the new connection with client
         newsockfd = accept(sockfd, (sockaddr *)&cliAddr, &clilen);
+        sockfdArray.push_back(newsockfd);
         if (newsockfd < 0) error("Error accepting request from client!");
         std::cout << "Connected with client!" << std::endl;
 
-        pid = fork();
-        if (pid < 0) error("Error on fork");
-        if (pid == 0) // in the child process
-        {
-            close(sockfd); // close parent socket
-            communicate(newsockfd);
-
-            //we need to close the socket descriptors after we're all done
-            close(sockfd);
-            std::cout << "Connection closed..." << std::endl;
-            return 0;
-        }
-        else
-        {
-            // in the parent process waiting for next accept
-            close(newsockfd);
-        }
+        if (pthread_create(&tid[num++], nullptr, socketThread, &newsockfd) != 0)
+            error("Failed to create thread");
     }
+    //we need to close the socket descriptors after we're all done
+    close(sockfd);
+    std::cout << "Connection closed..." << std::endl;
+    return 0;
 }
-
-void communicate(int sockfd) {
-    int n;
-    //buffer to send and receive messages with
-    char msg[256];
-
-    while(true)
-    {
-        //receive a message from the client (listen)
-        std::cout << "Awaiting client response..." << std::endl;
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-
-        //the read() will block until there is something for it to read in the socket,
-        // i.e. after the client has executed a write()
-        n = recv(sockfd, (char*)&msg, sizeof(msg), 0);
-        if (n < 0) error("Error reading from socket");
-
-        if(!strcmp(msg, "exit"))
-        {
-            std::cout << "Client has quit the session" << std::endl;
-            break;
-        }
-
-        std::cout << "Client: " << msg << std::endl;
-        std::cout << ">";
-        std::string data;
-        getline(std::cin, data);
-        memset(&msg, 0, sizeof(msg)); //clear the buffer
-        strcpy(msg, data.c_str());
-        if(data == "exit")
-        {
-            //send to the client that server has closed the connection
-            send(sockfd, (char*)&msg, sizeof(msg), 0);
-            break;
-        }
-
-        //send the message to client
-        n = send(sockfd, (char*)&msg, sizeof(msg), 0);
-        if (n < 0) error("Error writing to socket");
-    }
-}
-

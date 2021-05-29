@@ -22,62 +22,42 @@ void error(const std::string& msg) {
     exit(1);
 }
 
-void broadcastMessage(char* msg) {
-    int temp;
+void broadcastMessage(char* msg, int sockfd) {
     //send the message to client
     pthread_mutex_lock(&lock);
     for (auto socks : sockfdArray) {
-        temp = send(socks, msg, sizeof(msg), 0);
-        if (temp < 0) error("Error writing to socket");
+        if (socks == sockfd) continue;
+        if (send(socks, msg, strlen(msg), 0) < 0)
+            error("Error writing to socket");
     }
     pthread_mutex_unlock(&lock);
 }
 
 void* socketThread(void *arg) {
     int sockfd = *((int *)arg);
-    char msg[256]; int temp;
+    char msg[256];
 
     while(true)
     {
         //receive a message from the client (listen)
         std::cout << "Awaiting client response..." << std::endl;
-        memset(&msg, 0, sizeof(msg));//clear the buffer
+        memset(msg, 0, sizeof(msg));//clear the buffer
 
         //the read() will block until there is something for it to read in the socket,
         // i.e. after the client has executed a write()
-        temp = recv(sockfd, (char*)&msg, sizeof(msg), 0);
-        if (temp < 0) error("Error reading from socket");
+        if (recv(sockfd, (char*)&msg, sizeof(msg), 0) < 0)
+            error("Error reading from socket");
 
         if(!strcmp(msg, "exit"))
         {
-            std::cout << "Client has quit the session" << std::endl;
-            num--;
+            pthread_mutex_lock(&lock);
+            sockfdArray.erase(remove(sockfdArray.begin(), sockfdArray.end(), sockfd), sockfdArray.end());
+            pthread_mutex_unlock(&lock);
             close(sockfd);
             pthread_exit(nullptr);
         }
 
-        broadcastMessage(msg);
-
-        // lock
-        //pthread_mutex_lock(&lock);
-        //std::cout << "Client: " << msg << std::endl;
-        //std::cout << ">";
-        //std::string data;
-        //getline(std::cin, data);
-        //memset(&msg, 0, sizeof(msg)); //clear the buffer
-        //strcpy(msg, data.c_str());
-        //pthread_mutex_unlock(&lock);
-        //sleep(1);
-
-        /*if(data == "exit")
-        {
-            //send to the client that server has closed the connection
-            send(sockfd, (char*)&msg, sizeof(msg), 0);
-            semaphore.Signal();
-            num--;
-            close(sockfd);
-            pthread_exit(nullptr);
-        }*/
+        broadcastMessage(msg, sockfd);
     }
 }
 
@@ -136,7 +116,7 @@ int main(int argc, char *argv[])
         if (newsockfd < 0) error("Error accepting request from client!");
         std::cout << "Connected with client!" << std::endl;
 
-        if (pthread_create(&tid[num++], nullptr, socketThread, &newsockfd) != 0)
+        if (pthread_create(&tid[(num++) % 5], nullptr, socketThread, &newsockfd) != 0)
             error("Failed to create thread");
     }
     //we need to close the socket descriptors after we're all done

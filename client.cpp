@@ -11,7 +11,7 @@
 #include <sys/wait.h>
 #include <pthread.h>
 
-const char* name;
+std::string name;
 bool flag = true;
 
 void error(const std::string& msg) {
@@ -20,7 +20,6 @@ void error(const std::string& msg) {
 }
 
 void* sendThread(void* arg) {
-    int n;
     char msg[256];
     int sockfd = *((int *)arg);
 
@@ -28,32 +27,35 @@ void* sendThread(void* arg) {
         std::cout << ">";
         std::string data;
         getline(std::cin, data);
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-        strcpy(msg, name);
+        memset(msg, 0, sizeof(msg));//clear the buffer
+        strcpy(msg, name.c_str());
         strcat(msg, " : ");
         strcat(msg, data.c_str());
         if(data == "exit")
         {
+            std::string leaveMsg = name + " has quit";
+            if (send(sockfd, &leaveMsg, leaveMsg.size() + 1, 0) < 0)
+                error("Error writing to socket");
+            sleep(1);
             send(sockfd, (char*)(data.c_str()), strlen(msg), 0);
             flag = false;
             pthread_exit(nullptr);
         }
 
-        n = send(sockfd, (char*)&msg, strlen(msg), 0);
-        if (n < 0) error("Error writing to socket");
+        if (send(sockfd, (char*)&msg, strlen(msg), 0) < 0)
+            error("Error writing to socket");
     }
 }
 
 void* recvThread(void* arg) {
-    int n;
     char msg[256];
     int sockfd = *((int *)arg);
 
     while (true)
     {
-        memset(&msg, 0, sizeof(msg));//clear the buffer
-        n = recv(sockfd, (char*)&msg, sizeof(msg), 0);
-        if (n < 0) error("Error reading from socket");
+        memset(msg, 0, sizeof(msg));//clear the buffer
+        if (recv(sockfd, (char*)&msg, sizeof(msg), 0) < 0)
+            error("Error reading from socket");
 
         std::cout << msg << std::endl;
 
@@ -65,16 +67,16 @@ void* recvThread(void* arg) {
 int main(int argc, char *argv[])
 {
     //we need 2 things: ip address and port number, in that order
-    if(argc != 4) error("Usage: ip_address port");
+    if(argc != 3) error("Usage: ip_address port");
 
     int sockfd, portno, n;
     sockaddr_in servAddr;
     struct hostent* server;
     char* serverIp;
 
-    //create a message buffer 
-    char msg[256];
-    name = argv[3];
+    std::cout << "Your name: ";
+    getline(std::cin, name);
+    std::cout << std::endl;
 
     //grab port number
     portno = atoi(argv[2]);
@@ -98,22 +100,21 @@ int main(int argc, char *argv[])
         error("Error connecting to socket!");
 
     std::cout << "Connected to the server!" << std::endl;
+    std::cout << "=== WELCOME TO THE CHATROOM ===" << std::endl;
 
-    pthread_t tid;
-    if (pthread_create(&tid, nullptr, recvThread, &sockfd) != 0)
+    std::string welcomeMsg = name + " has joined";
+    if (send(sockfd, &welcomeMsg, welcomeMsg.size() + 1, 0) < 0)
+        error("Error writing to socket");
+
+    pthread_t tid1, tid2;
+    if (pthread_create(&tid1, nullptr, recvThread, &sockfd) != 0)
         error("Failed to create recvThread");
 
-    if (pthread_create(&tid, nullptr, sendThread, &sockfd) != 0)
+    if (pthread_create(&tid2, nullptr, sendThread, &sockfd) != 0)
         error("Failed to create sendThread");
 
-
-    while(true)
-    {
-        if (!flag) {
-            std::cout << name << " quit" << std::endl;
-            break;
-        }
-    }
+    void* ret; // 子執行緒傳回值
+    pthread_join(tid2, &ret);
 
     sleep(1);
     close(sockfd);

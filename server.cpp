@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <vector>
 #include <cstdio>
+#include <string>
 
 #include "Semaphore.h"
 #include "server.h"

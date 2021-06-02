@@ -38,7 +38,7 @@ void* sendThread(void* arg) {
         if(data == "exit")
         {
             std::string leaveMsg = name + " has quit";
-            if (send(sockfd, &leaveMsg, leaveMsg.size() + 1, 0) < 0)
+            if (send(sockfd, leaveMsg.c_str(), leaveMsg.size() + 1, 0) < 0)
                 error("Error writing to socket");
             sleep(1);
             send(sockfd, (char*)(data.c_str()), strlen(msg), 0);
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     std::cout << "=== WELCOME TO THE CHATROOM ===" << std::endl;
 
     std::string welcomeMsg = name + " has joined";
-    if (send(sockfd, &welcomeMsg, welcomeMsg.size() + 1, 0) < 0)
+    if (send(sockfd, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0) < 0)
         error("Error writing to socket");
 
     pthread_t tid1, tid2;

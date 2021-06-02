@@ -1,12 +1,12 @@
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <netdb.h>
 #include <sys/uio.h>
 #include <sys/wait.h>

@@ -17,6 +17,7 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <algorithm>
 
 void error(const std::string& msg);
 void* sendThread(void* arg);

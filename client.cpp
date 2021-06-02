@@ -15,7 +15,7 @@
 
 #include "client.h"
 
-char name[128];
+char name[128], temp[128];
 bool flag = true;
 
 void error(const std::string& msg) {
@@ -37,8 +37,11 @@ void* sendThread(void* arg) {
         strcat(msg, data.c_str());
         if(data == "exit")
         {
-            if (send(sockfd, strcat(name, " has quit"), strlen(name) + 9, 0) < 0)
+            strcpy(temp, name);
+            strcat(temp, " has quit");
+            if (send(sockfd, temp, strlen(name) + 9, 0) < 0)
                 error("Error writing to socket");
+            memset(temp, 0, sizeof(temp));//clear the buffer
             sleep(1);
             send(sockfd, (char*)(data.c_str()), strlen(msg), 0);
             flag = false;
@@ -105,8 +108,11 @@ int main(int argc, char *argv[])
     std::cout << "Connected to the server!" << std::endl;
     std::cout << "=== WELCOME TO THE CHATROOM ===" << std::endl;
 
-    if (send(sockfd, strcat(name, " has joined"), strlen(name) + 11, 0) < 0)
+    strcpy(temp, name);
+    strcat(temp, " has joined");
+    if (send(sockfd, temp, strlen(name) + 11, 0) < 0)
         error("Error writing to socket");
+    memset(temp, 0, sizeof(temp));//clear the buffer
 
     pthread_t tid1, tid2;
     if (pthread_create(&tid1, nullptr, recvThread, &sockfd) != 0)

@@ -1,17 +1,5 @@
-#include <iostream>
-#include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/uio.h>
-#include <sys/wait.h>
-#include <pthread.h>
-#include <algorithm>
-#include <vector>
-
 #include "Semaphore.h"
+#include "server.h"
 
 #define numberOfClient 1
 int num;

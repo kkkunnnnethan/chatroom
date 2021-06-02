@@ -1,15 +1,4 @@
-#include <iostream>
-#include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <netdb.h>
-#include <sys/uio.h>
-#include <sys/wait.h>
-#include <pthread.h>
+#include "client.h"
 
 std::string name;
 bool flag = true;

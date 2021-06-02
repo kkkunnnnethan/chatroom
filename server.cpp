@@ -8,6 +8,7 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <algorithm>
 #include <vector>
 
 #include "Semaphore.h"
@@ -51,7 +52,7 @@ void* socketThread(void *arg) {
         if(!strcmp(msg, "exit"))
         {
             pthread_mutex_lock(&lock);
-            auto temp = std::remove(sockfdArray.begin(), sockfdArray.end(), sockfd);
+            auto temp = remove(sockfdArray.begin(), sockfdArray.end(), sockfd);
             sockfdArray.erase(temp, sockfdArray.end());
             pthread_mutex_unlock(&lock);
             close(sockfd);

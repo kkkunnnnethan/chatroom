@@ -1,3 +1,19 @@
+#include <iostream>
+#include <stdio.h>
+#include <string>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <netdb.h>
+#include <sys/uio.h>
+#include <sys/wait.h>
+#include <pthread.h>
+#include <algorithm>
+#include <vector>
+
 #include "Semaphore.h"
 #include "server.h"
 

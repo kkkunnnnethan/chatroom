@@ -1,13 +1,17 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <pthread.h>
 #include <vector>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <cstdio>
+#include <string>
 
 #include "client.h"
 

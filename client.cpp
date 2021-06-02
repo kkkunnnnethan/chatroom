@@ -15,7 +15,7 @@
 
 #include "client.h"
 
-std::string name;
+char name[128];
 bool flag = true;
 
 void error(const std::string& msg) {
@@ -32,13 +32,12 @@ void* sendThread(void* arg) {
         std::string data;
         getline(std::cin, data);
         memset(msg, 0, sizeof(msg));//clear the buffer
-        strcpy(msg, name.c_str());
+        strcpy(msg, name);
         strcat(msg, " : ");
         strcat(msg, data.c_str());
         if(data == "exit")
         {
-            std::string leaveMsg = name + " has quit";
-            if (send(sockfd, leaveMsg.c_str(), leaveMsg.size() + 1, 0) < 0)
+            if (send(sockfd, strcat(name, " has quit"), strlen(name) + 9, 0) < 0)
                 error("Error writing to socket");
             sleep(1);
             send(sockfd, (char*)(data.c_str()), strlen(msg), 0);
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
     char* serverIp;
 
     std::cout << "Your name: ";
-    getline(std::cin, name);
+    std::cin.getline(name, 128);
     std::cout << std::endl;
 
     //grab port number
@@ -106,8 +105,7 @@ int main(int argc, char *argv[])
     std::cout << "Connected to the server!" << std::endl;
     std::cout << "=== WELCOME TO THE CHATROOM ===" << std::endl;
 
-    std::string welcomeMsg = name + " has joined";
-    if (send(sockfd, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0) < 0)
+    if (send(sockfd, strcat(name, " has joined"), strlen(name) + 11, 0) < 0)
         error("Error writing to socket");
 
     pthread_t tid1, tid2;

@@ -6,6 +6,7 @@
 #define CHATROOM_CLIENT_H
 
 #include <iostream>
+#include <stdio.h>
 #include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>

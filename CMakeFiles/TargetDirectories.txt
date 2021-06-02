@@ -1,0 +1,3 @@
+/Users/kun/github/chatroom/CMakeFiles/rebuild_cache.dir
+/Users/kun/github/chatroom/CMakeFiles/edit_cache.dir
+/Users/kun/github/chatroom/CMakeFiles/chatroom.dir

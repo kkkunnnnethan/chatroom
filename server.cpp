@@ -52,7 +52,7 @@ void* socketThread(void *arg) {
         if(!strcmp(msg, "exit"))
         {
             pthread_mutex_lock(&lock);
-            auto temp = remove(sockfdArray.begin(), sockfdArray.end(), sockfd);
+            auto temp = std::remove(sockfdArray.begin(), sockfdArray.end(), sockfd);
             sockfdArray.erase(temp, sockfdArray.end());
             pthread_mutex_unlock(&lock);
             close(sockfd);

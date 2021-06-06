@@ -1,18 +1,3 @@
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstring>
-#include <sys/uio.h>
-#include <sys/wait.h>
-#include <pthread.h>
-#include <vector>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <cstdio>
-#include <string>
-
 #include "client.h"
 
 char name[128], temp[128];
@@ -60,6 +45,7 @@ void* recvThread(void* arg) {
     while (true)
     {
         memset(msg, 0, sizeof(msg));//clear the buffer
+        //成功回傳大於0整數 失敗回傳-1 TCP斷線回傳0
         if (recv(sockfd, (char*)&msg, sizeof(msg), 0) < 0)
             error("Error reading from socket");
 

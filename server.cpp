@@ -1,21 +1,5 @@
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstring>
-#include <sys/uio.h>
-#include <sys/wait.h>
-#include <pthread.h>
-#include <algorithm>
-#include <vector>
-#include <cstdio>
-#include <string>
-
-#include "Semaphore.h"
 #include "server.h"
 
-#define numberOfClient 1
 int num;
 std::vector<int> sockfdArray{};
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -96,6 +80,7 @@ int main(int argc, char *argv[])
     servAddr.sin_family = AF_INET;
     //htonl-> converts a port number in host byte order to a port number in network byte order.
     servAddr.sin_port = htons(portno);
+    std::cout << htons(portno) << std::endl;
     servAddr.sin_addr.s_addr = INADDR_ANY;
 
     //bind the socket to its local address

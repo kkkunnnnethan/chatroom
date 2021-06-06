@@ -24,5 +24,5 @@ g++ client.cpp -o client.out -pthread
 ./server.out port_number
 ./client.out IP_address port_number
 ```
-<img src="https://imgur.com/oeZyUjL.png" alt="server" height="300"/>
-<img src="https://imgur.com/fYVRC9a.png" alt="server" height="300"/>
+<img src="https://imgur.com/oeZyUjL.png" alt="server" height="50%"/>
+<img src="https://imgur.com/fYVRC9a.png" alt="client" height="50%"/>

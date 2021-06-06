@@ -2,6 +2,11 @@
 
 ### Compile
 
+使用makefile
+```
+make
+```
+
 Mac
 ```
 g++ -std=c++11 server.cpp -o server.out
@@ -19,3 +24,5 @@ g++ client.cpp -o client.out -pthread
 ./server.out port_number
 ./client.out IP_address port_number
 ```
+<img src="https://imgur.com/oeZyUjL" alt="server" height="300"/>
+<img src="https://imgur.com/fYVRC9a" alt="server" height="300"/>

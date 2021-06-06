@@ -80,7 +80,6 @@ int main(int argc, char *argv[])
     servAddr.sin_family = AF_INET;
     //htonl-> converts a port number in host byte order to a port number in network byte order.
     servAddr.sin_port = htons(portno);
-    std::cout << htons(portno) << std::endl;
     servAddr.sin_addr.s_addr = INADDR_ANY;
 
     //bind the socket to its local address
